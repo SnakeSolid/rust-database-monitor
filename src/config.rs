@@ -37,7 +37,7 @@ impl Configuration {
         {
             let mut ap = ArgumentParser::new();
 
-            ap.set_description("Anaconda database monitor.");
+            ap.set_description("PostgreSQL database monitor.");
             ap.refer(&mut address).add_option(&["-b", "--bind"],
                                               StoreOption,
                                               "Address to bind on (default: localhost)");

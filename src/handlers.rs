@@ -174,7 +174,7 @@ impl EmptyHandler {
 
 
 impl Handler for EmptyHandler {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, _: &mut Request) -> IronResult<Response> {
         Ok(Response::with((status::BadRequest, "No API entry point")))
     }
 }
