@@ -1,6 +1,23 @@
 # Database monitor
 
-PostgreSQL database monitor tool to search PostgreSQL databases. Provides simple WEB interface to find database on multiple PostgreSQL servers.
+PostgreSQL database monitor is a tool to search PostgreSQL databases. Provides simple WEB interface to find database on multiple PostgreSQL servers.
+
+PostgreSQL database monitor every 10 minutes walk all servers from configuration and executes query:
+
+```sql
+SELECT
+    d.datname,
+    d.datcollate,
+    r.rolname
+FROM pg_database AS d
+    INNER JOIN pg_roles AS r ON ( r.oid = d.datdba )
+WHERE
+    rolcreaterole = FALSE AND
+    rolcreatedb = TRUE AND
+    rolcanlogin = TRUE
+```
+
+Query results are stored in worker in memory. Update interval can be defined with `--interval` option or `interval` configuration parameter.
 
 ## Usage
 
