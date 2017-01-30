@@ -60,7 +60,7 @@ fn main() {
 
     let mut router = Router::new();
 
-    router.post("/state", StatusHandler::new(state.clone()), "state");
+    router.post("/status", StatusHandler::new(state.clone()), "status");
     router.post("/databases",
                 DatabasesHandler::new(state.clone()),
                 "databases");

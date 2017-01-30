@@ -45,13 +45,31 @@ function DatabaseItem(name, collate, role, server, updated) {
 
 function SearchDatabaseModel() {
   var self = this;
-  self.updated = ko.observable("now");
+  self.updated = ko.observable(0);
   self.query = ko.observable("");
   self.loading = ko.observable(false);
   self.databases = ko.observableArray([]);
   self.message = ko.observable(NO_DATA_MESSAGE);
 
   self.timerId = null;
+
+  self.lastUpdate = ko.computed(function () {
+    var updated = self.updated();
+
+    if (updated === 0) {
+      return "fail";
+    }
+
+    return moment.unix(updated).fromNow();
+  });
+
+  self.updateSuccess = ko.computed(function() {
+    return self.updated() !== 0;
+  });
+
+  self.updateFailed = ko.computed(function() {
+    return self.updated() === 0;
+  });
 
   self.loaded = ko.computed(function () {
     return !self.loading();
@@ -96,14 +114,28 @@ function SearchDatabaseModel() {
 
       self.loading(false);
     }).fail(function() {
-      console.log("fail");
-
       self.loading(false);
     });
 
     self.message("");
     self.loading(true);
   }
+
+  self.checkStatus = function () {
+    $.ajax("/api/v1/status", {
+      type: 'POST'
+    }).done(function(data) {
+      if (data["ok"] === true) {
+        var last_update = data["last_update"] || 0;
+
+        self.updated(last_update);
+      } else {
+        self.updated(0);
+      }
+    }).fail(function() {
+      self.updated(0);
+    });
+  };
 
   self.query.subscribe(function(newValue) {
     if (self.timerId != null) {
@@ -112,6 +144,12 @@ function SearchDatabaseModel() {
 
     self.timerId = window.setTimeout(self.submit, 300);
   });
+
+  // Update status every 3 minutes
+  window.setInterval(self.checkStatus, 30 * 1000);
+
+  // Update status after page loaded
+  self.checkStatus();
 }
 
 

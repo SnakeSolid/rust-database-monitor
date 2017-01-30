@@ -183,6 +183,8 @@ impl Handler for EmptyHandler {
 #[derive(RustcEncodable, Debug, Clone)]
 struct StateResponse {
     last_update: Option<i64>,
+    message: Option<String>,
+    ok: bool,
 }
 
 
@@ -201,7 +203,12 @@ impl StatusHandler {
 impl Handler for StatusHandler {
     fn handle(&self, _: &mut Request) -> IronResult<Response> {
         let last_update = self.state.last_update();
-        let response = StateResponse { last_update: last_update };
+
+        let response = StateResponse {
+            last_update: last_update,
+            message: None,
+            ok: true,
+        };
 
         let json_records = match json::encode(&response) {
             Ok(json_records) => json_records,
