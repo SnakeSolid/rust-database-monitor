@@ -25,11 +25,13 @@
         </div>
 
         <div class="right menu">
-          <a class="ui item" href="#">
+          <div class="item">
             <i class="green check circle icon" data-bind="visible: updateSuccess"></i>
             <i class="red remove circle icon" data-bind="visible: updateFailed"></i>
-            <span data-bind="text: lastUpdate"></span>
-          </a>
+            <span>last update: </span>
+            &nbsp;
+            <span data-bind="text: lastUpdate">&hellip;</span>
+          </div>
         </div>
       </div>
     </div>
