@@ -135,12 +135,28 @@ impl Handler for DatabasesHandler {
             }
         };
 
-        if request.query.len() > 32 {
-            info!("Query string too large");
+        let content_type = Mime(TopLevel::Application, SubLevel::Json, Vec::new());
 
-            return Ok(Response::with(
-                (status::BadRequest, "Query string too large"),
-            ));
+        if request.query.len() > 64 {
+            let response = DatabasesResponse {
+                databases: None,
+                message: Some("Query string too large".into()),
+                ok: false,
+            };
+
+            let json_records = match json::encode(&response) {
+                Ok(json_records) => json_records,
+                Err(err) => {
+                    warn!("Fail to convert records to JSON: {}", err);
+
+                    return Ok(Response::with((
+                        status::InternalServerError,
+                        "Fail to convert records to JSON",
+                    )));
+                }
+            };
+
+            return Ok(Response::with((content_type, status::Ok, json_records)));
         }
 
         let databases = Self::range_databases(request.query.to_lowercase(), self.state.databases());
@@ -162,8 +178,6 @@ impl Handler for DatabasesHandler {
                 )));
             }
         };
-
-        let content_type = Mime(TopLevel::Application, SubLevel::Json, Vec::new());
 
         Ok(Response::with((content_type, status::Ok, json_records)))
     }

@@ -111,7 +111,7 @@ function SearchDatabaseModel() {
         }
       } else {
         self.databases([]);
-        self.message(date["message"]);
+        self.message(data["message"]);
       }
 
       self.loading(false);
