@@ -29,6 +29,7 @@ struct DatabaseInfo {
     collation_name: String,
     role_name: String,
     server_name: String,
+    server_description: String,
     last_update: Option<i64>,
 }
 
@@ -52,16 +53,15 @@ impl DatabasesHandler {
     }
 
     fn range_databases<S>(query: S, database_list: Vec<DatabaseRow>) -> Vec<DatabaseInfo>
-        where S: Into<String>
+    where
+        S: Into<String>,
     {
         let query = query.into();
         let mut ranks = HashMap::new();
 
-        for part in query.split(' ').filter(|e| !e.is_empty()) {
+        for part in query.split(|c| " _-".contains(c)).filter(|e| !e.is_empty()) {
             for database in &database_list {
-                let database_name = database.database_name.to_uppercase();
-
-                if database_name.contains(part) {
+                if database.lower_name.contains(part) {
                     let count = ranks.entry(database).or_insert(0);
 
                     *count += part.len();
@@ -73,7 +73,8 @@ impl DatabasesHandler {
 
         ranks.sort_by(Self::compare_databases);
 
-        let result: Vec<_> = ranks.into_iter()
+        let result: Vec<_> = ranks
+            .into_iter()
             .take(20)
             .map(|(db, _)| {
                 DatabaseInfo {
@@ -81,6 +82,7 @@ impl DatabasesHandler {
                     collation_name: db.database_collate.clone(),
                     role_name: db.database_owner.clone(),
                     server_name: db.server_name.clone(),
+                    server_description: db.server_description.clone(),
                     last_update: Some(db.last_update),
                 }
             })
@@ -127,18 +129,21 @@ impl Handler for DatabasesHandler {
             Err(err) => {
                 warn!("Fail to decode request body as JSON: {}", err);
 
-                return Ok(Response::with((status::BadRequest,
-                                          "Fail to decode request body as JSON")));
+                return Ok(Response::with(
+                    (status::BadRequest, "Fail to decode request body as JSON"),
+                ));
             }
         };
 
         if request.query.len() > 32 {
             info!("Query string too large");
 
-            return Ok(Response::with((status::BadRequest, "Query string too large")));
+            return Ok(Response::with(
+                (status::BadRequest, "Query string too large"),
+            ));
         }
 
-        let databases = Self::range_databases(request.query.to_uppercase(), self.state.databases());
+        let databases = Self::range_databases(request.query.to_lowercase(), self.state.databases());
 
         let response = DatabasesResponse {
             databases: Some(databases),
@@ -151,8 +156,10 @@ impl Handler for DatabasesHandler {
             Err(err) => {
                 warn!("Fail to convert records to JSON: {}", err);
 
-                return Ok(Response::with((status::InternalServerError,
-                                          "Fail to convert records to JSON")));
+                return Ok(Response::with((
+                    status::InternalServerError,
+                    "Fail to convert records to JSON",
+                )));
             }
         };
 
@@ -215,8 +222,10 @@ impl Handler for StatusHandler {
             Err(err) => {
                 warn!("Fail to convert records to JSON: {}", err);
 
-                return Ok(Response::with((status::InternalServerError,
-                                          "Fail to convert records to JSON")));
+                return Ok(Response::with((
+                    status::InternalServerError,
+                    "Fail to convert records to JSON",
+                )));
             }
         };
 

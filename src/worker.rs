@@ -21,20 +21,23 @@ pub struct Worker {
 
 
 fn server_database_infos(conn_info: &ServerConnInfo) -> IoResult<Vec<DatabaseState>> {
-    let url = format!("postgresql://{1}:{2}@{0}/postgres",
-                      conn_info.name,
-                      conn_info.role,
-                      conn_info.password);
+    let url = format!(
+        "postgresql://{1}:{2}@{0}/postgres",
+        conn_info.host,
+        conn_info.role,
+        conn_info.password
+    );
     let conn = match Connection::connect(url, TlsMode::None) {
         Ok(conn) => conn,
         Err(err) => {
-            warn!("Failed to connect to server {}: {}", conn_info.name, err);
+            warn!("Failed to connect to server {}: {}", conn_info.host, err);
 
             return Err(IoError::new(ErrorKind::Other, err));
         }
     };
 
-    let rows = conn.query(r#"
+    let rows = conn.query(
+        r#"
     SELECT
         d.datname,
         d.datcollate,
@@ -43,9 +46,9 @@ fn server_database_infos(conn_info: &ServerConnInfo) -> IoResult<Vec<DatabaseSta
         INNER JOIN pg_roles AS r ON ( r.oid = d.datdba )
     WHERE
         rolcreaterole = FALSE AND
-        rolcreatedb = TRUE AND
         rolcanlogin = TRUE"#,
-               &[])?;
+        &[],
+    )?;
 
     let result = rows.into_iter()
         .map(|row| {
@@ -66,11 +69,13 @@ fn do_work(config: Configuration, state: State) {
         info!("Updating servers started");
 
         for conn_info in &config.servers {
-            debug!("Updating server {}", conn_info.name);
+            debug!("Updating server {}", conn_info.host);
 
             match server_database_infos(conn_info) {
-                Ok(dbs) => state.update_server(conn_info.name.clone(), dbs),
-                Err(err) => warn!("Failed to update server {}: {}", conn_info.name, err),
+                Ok(dbs) => {
+                    state.update_server(conn_info.host.clone(), conn_info.description.clone(), dbs)
+                }
+                Err(err) => warn!("Failed to update server {}: {}", conn_info.host, err),
             }
         }
 
@@ -83,7 +88,8 @@ fn do_work(config: Configuration, state: State) {
 
 impl Worker {
     pub fn spawn(config: Configuration, state: State) -> IoResult<Worker> {
-        let join_handle = Builder::new().name("Worker (update db info)".into())
+        let join_handle = Builder::new()
+            .name("Worker (update db info)".into())
             .spawn(move || do_work(config, state))?;
 
         Ok(Worker { join_handle: join_handle })

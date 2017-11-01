@@ -13,7 +13,8 @@ use argparse::StoreOption;
 
 #[derive(RustcDecodable, Debug, Clone)]
 pub struct ServerConnInfo {
-    pub name: String,
+    pub host: String,
+    pub description: String,
     pub role: String,
     pub password: String,
 }
@@ -38,18 +39,26 @@ impl Configuration {
             let mut ap = ArgumentParser::new();
 
             ap.set_description("PostgreSQL database monitor.");
-            ap.refer(&mut address).add_option(&["-b", "--bind"],
-                                              StoreOption,
-                                              "Address to bind on (default: localhost)");
-            ap.refer(&mut port).add_option(&["-p", "--port"],
-                                           StoreOption,
-                                           "Port to listen (default: 8080)");
-            ap.refer(&mut interval).add_option(&["-i", "--interval"],
-                                               StoreOption,
-                                               "Probe interval in seconds (default: 600)");
-            ap.refer(&mut config_file).add_option(&["-c", "--config"],
-                                                  StoreOption,
-                                                  "Path to configuration file");
+            ap.refer(&mut address).add_option(
+                &["-b", "--bind"],
+                StoreOption,
+                "Address to bind on (default: localhost)",
+            );
+            ap.refer(&mut port).add_option(
+                &["-p", "--port"],
+                StoreOption,
+                "Port to listen (default: 8080)",
+            );
+            ap.refer(&mut interval).add_option(
+                &["-i", "--interval"],
+                StoreOption,
+                "Probe interval in seconds (default: 600)",
+            );
+            ap.refer(&mut config_file).add_option(
+                &["-c", "--config"],
+                StoreOption,
+                "Path to configuration file",
+            );
             ap.parse_args_or_exit();
         }
 
@@ -74,7 +83,8 @@ impl Configuration {
     }
 
     fn read_from_file<P>(path: P) -> IoResult<Configuration>
-        where P: AsRef<Path>
+    where
+        P: AsRef<Path>,
     {
         let mut file = File::open(path)?;
         let mut raw = String::new();

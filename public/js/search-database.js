@@ -4,13 +4,14 @@
 const NO_DATA_MESSAGE = "No data";
 
 
-function DatabaseItem(name, collate, role, server, updated) {
+function DatabaseItem(name, collate, role, server, description, updated) {
   var self = this;
 
   self.name = ko.observable(name);
   self.collate = ko.observable(collate);
   self.role = ko.observable(role);
   self.server = ko.observable(server);
+  self.description = ko.observable(description);
 
   self.updated = ko.computed(function() {
     if (updated === 0) {
@@ -100,6 +101,7 @@ function SearchDatabaseModel() {
             item["collation_name"] || "",
             item["role_name"] || "",
             item["server_name"] || "",
+            item["server_description"] || "",
             item["last_update"] || 0
           );
         }));

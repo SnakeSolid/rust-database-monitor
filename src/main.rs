@@ -61,9 +61,11 @@ fn main() {
     let mut router = Router::new();
 
     router.post("/status", StatusHandler::new(state.clone()), "status");
-    router.post("/databases",
-                DatabasesHandler::new(state.clone()),
-                "databases");
+    router.post(
+        "/databases",
+        DatabasesHandler::new(state.clone()),
+        "databases",
+    );
     router.post("/", EmptyHandler::new(), "empty");
 
     let mut mount = Mount::new();

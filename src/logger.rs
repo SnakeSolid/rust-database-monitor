@@ -13,9 +13,11 @@ fn format(record: &LogRecord) -> String {
     if let Ok(time_string) = time::strftime("%Y-%m-%d %H:%M:%S", &t) {
         format!("{}: {} - {}", time_string, record.level(), record.args())
     } else {
-        format!("????-??-?? ??:??:??: {} - {}",
-                record.level(),
-                record.args())
+        format!(
+            "????-??-?? ??:??:??: {} - {}",
+            record.level(),
+            record.args()
+        )
     }
 }
 
