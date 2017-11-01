@@ -1,7 +1,7 @@
 [package]
 name = "database-monitor"
 version = "0.1.0"
-authors = ["snake"]
+authors = ["Shabanov Anton"]
 
 [dependencies]
 argparse = "0.2"
