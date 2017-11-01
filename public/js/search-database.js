@@ -87,13 +87,15 @@ function SearchDatabaseModel() {
   self.submit = function() {
     var data = { "query": self.query() };
 
-    $.ajax("/api/v1/databases", {
+    reqwest({
+      url: "/api/v1/databases",
+      method: "post",
       data: JSON.stringify(data),
-      contentType: 'application/json',
-      type: 'POST'
-    }).done(function(data) {
-      if (data["ok"] === true) {
-        var databases = data["databases"] || [];
+      type: "json",
+      contentType: "application/json"
+    }).then(function (resp) {
+      if (resp["ok"] === true) {
+        var databases = resp["databases"] || [];
 
         self.databases(databases.map(function (item) {
           return new DatabaseItem(
@@ -111,11 +113,11 @@ function SearchDatabaseModel() {
         }
       } else {
         self.databases([]);
-        self.message(data["message"]);
+        self.message(resp["message"]);
       }
 
       self.loading(false);
-    }).fail(function() {
+    }).fail(function(err) {
       self.loading(false);
     });
 
@@ -124,17 +126,18 @@ function SearchDatabaseModel() {
   }
 
   self.checkStatus = function () {
-    $.ajax("/api/v1/status", {
-      type: 'POST'
-    }).done(function(data) {
-      if (data["ok"] === true) {
-        var last_update = data["last_update"] || 0;
+    reqwest({
+      url: "/api/v1/status",
+      method: "post",
+    }).then(function (resp) {
+      if (resp["ok"] === true) {
+        var last_update = resp["last_update"] || 0;
 
         self.updated(last_update);
       } else {
         self.updated(0);
       }
-    }).fail(function() {
+    }).fail(function(err) {
       self.updated(0);
     });
   };
@@ -155,6 +158,4 @@ function SearchDatabaseModel() {
 }
 
 
-$(function() {
-  ko.applyBindings(new SearchDatabaseModel());
-})
+ko.applyBindings(new SearchDatabaseModel());
