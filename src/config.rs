@@ -5,13 +5,13 @@ use std::io::Read;
 use std::io::Result as IoResult;
 use std::path::Path;
 
-use rustc_serialize::json;
+use serde_json;
 
 use argparse::ArgumentParser;
 use argparse::StoreOption;
 
 
-#[derive(RustcDecodable, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ServerConnInfo {
     host: String,
     port: Option<u16>,
@@ -20,7 +20,7 @@ pub struct ServerConnInfo {
     password: String,
 }
 
-#[derive(RustcDecodable, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Configuration {
     address: String,
     port: u16,
@@ -125,7 +125,7 @@ impl Configuration {
 
         file.read_to_string(&mut raw)?;
 
-        match json::decode(&raw) {
+        match serde_json::from_str(&raw) {
             Ok(config) => Ok(config),
             Err(err) => {
                 error!("Failed to parse configuration file: {}", err);

@@ -1,12 +1,16 @@
 #[macro_use]
 extern crate log;
+
+#[macro_use]
+extern crate serde_derive;
+
 extern crate argparse;
 extern crate env_logger;
 extern crate iron;
 extern crate mount;
 extern crate postgres;
 extern crate router;
-extern crate rustc_serialize;
+extern crate serde_json;
 extern crate staticfile;
 extern crate time;
 
@@ -31,7 +35,7 @@ use staticfile::Static;
 
 fn main() {
     if let Err(err) = logger::init() {
-        panic!("Failed to initalize logger: {}", err);
+        panic!("Failed to initialize logger: {}", err);
     }
 
     info!("Reading configuration");

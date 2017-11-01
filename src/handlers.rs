@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::io::Read;
 
-use rustc_serialize::json;
+use serde_json;
 
 use iron::Handler;
 use iron::IronResult;
@@ -17,26 +17,29 @@ use state::DatabaseRow;
 use state::State;
 
 
-#[derive(RustcDecodable, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 struct DatabasesRequest {
     query: String,
 }
 
 
-#[derive(RustcEncodable, Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 struct DatabaseInfo {
     database_name: String,
     collation_name: String,
     role_name: String,
     server_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     server_description: Option<String>,
     last_update: Option<i64>,
 }
 
 
-#[derive(RustcEncodable, Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 struct DatabasesResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
     databases: Option<Vec<DatabaseInfo>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     message: Option<String>,
     ok: bool,
 }
@@ -44,6 +47,25 @@ struct DatabasesResponse {
 
 pub struct DatabasesHandler {
     state: State,
+}
+
+
+impl DatabasesResponse {
+    fn ok(databases: Vec<DatabaseInfo>) -> DatabasesResponse {
+        DatabasesResponse {
+            databases: Some(databases),
+            message: None,
+            ok: true,
+        }
+    }
+
+    fn err(message: &str) -> DatabasesResponse {
+        DatabasesResponse {
+            databases: None,
+            message: Some(message.into()),
+            ok: false,
+        }
+    }
 }
 
 
@@ -113,73 +135,66 @@ impl DatabasesHandler {
     }
 }
 
+macro_rules! or_bad_request {
+    ($param: expr, $message: tt) => {
+        match $param {
+            Ok(value) => value,
+            Err(err) => {
+                warn!("{}: {}", $message, err);
+
+                return Ok(Response::with((status::BadRequest, $message)));
+            }
+        }
+    }
+}
+
+macro_rules! or_server_error {
+    ($param: expr, $message: tt) => {
+        match $param {
+            Ok(value) => value,
+            Err(err) => {
+                warn!("{}: {}", $message, err);
+
+                return Ok(Response::with((status::InternalServerError, $message)));
+            }
+        }
+    }
+}
 
 impl Handler for DatabasesHandler {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let mut body = String::new();
 
-        if let Err(err) = request.body.read_to_string(&mut body) {
-            warn!("Fail to read request: {}", err);
+        or_bad_request!(
+            request.body.read_to_string(&mut body),
+            "Fail to read request"
+        );
 
-            return Ok(Response::with((status::BadRequest, "Fail to read request")));
-        }
-
-        let request: DatabasesRequest = match json::decode(&body) {
-            Ok(request) => request,
-            Err(err) => {
-                warn!("Fail to decode request body as JSON: {}", err);
-
-                return Ok(Response::with(
-                    (status::BadRequest, "Fail to decode request body as JSON"),
-                ));
-            }
-        };
-
+        let request: DatabasesRequest = or_server_error!(
+            serde_json::from_str(&body),
+            "Fail to decode request body as JSON"
+        );
         let content_type = Mime(TopLevel::Application, SubLevel::Json, Vec::new());
 
         if request.query.len() > 64 {
-            let response = DatabasesResponse {
-                databases: None,
-                message: Some("Query string too large".into()),
-                ok: false,
-            };
+            let response = DatabasesResponse::err("Query string too large");
+            let json_records = or_server_error!(
+                serde_json::to_string(&response),
+                "Fail to convert records to JSON"
+            );
 
-            let json_records = match json::encode(&response) {
-                Ok(json_records) => json_records,
-                Err(err) => {
-                    warn!("Fail to convert records to JSON: {}", err);
+            Ok(Response::with((content_type, status::Ok, json_records)))
+        } else {
+            let databases =
+                Self::range_databases(request.query.to_lowercase(), self.state.databases());
+            let response = DatabasesResponse::ok(databases);
+            let json_records = or_server_error!(
+                serde_json::to_string(&response),
+                "Fail to convert records to JSON"
+            );
 
-                    return Ok(Response::with((
-                        status::InternalServerError,
-                        "Fail to convert records to JSON",
-                    )));
-                }
-            };
-
-            return Ok(Response::with((content_type, status::Ok, json_records)));
+            Ok(Response::with((content_type, status::Ok, json_records)))
         }
-
-        let databases = Self::range_databases(request.query.to_lowercase(), self.state.databases());
-
-        let response = DatabasesResponse {
-            databases: Some(databases),
-            message: None,
-            ok: true,
-        };
-
-        let json_records = match json::encode(&response) {
-            Ok(json_records) => json_records,
-            Err(err) => {
-                warn!("Fail to convert records to JSON: {}", err);
-
-                return Ok(Response::with((
-                    status::InternalServerError,
-                    "Fail to convert records to JSON",
-                )));
-            }
-        };
-
-        Ok(Response::with((content_type, status::Ok, json_records)))
     }
 }
 
@@ -201,9 +216,11 @@ impl Handler for EmptyHandler {
 }
 
 
-#[derive(RustcEncodable, Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 struct StateResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
     last_update: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     message: Option<String>,
     ok: bool,
 }
@@ -211,6 +228,17 @@ struct StateResponse {
 
 pub struct StatusHandler {
     state: State,
+}
+
+
+impl StateResponse {
+    fn ok(last_update: Option<i64>) -> StateResponse {
+        StateResponse {
+            last_update: last_update,
+            message: None,
+            ok: true,
+        }
+    }
 }
 
 
@@ -224,25 +252,11 @@ impl StatusHandler {
 impl Handler for StatusHandler {
     fn handle(&self, _: &mut Request) -> IronResult<Response> {
         let last_update = self.state.last_update();
-
-        let response = StateResponse {
-            last_update: last_update,
-            message: None,
-            ok: true,
-        };
-
-        let json_records = match json::encode(&response) {
-            Ok(json_records) => json_records,
-            Err(err) => {
-                warn!("Fail to convert records to JSON: {}", err);
-
-                return Ok(Response::with((
-                    status::InternalServerError,
-                    "Fail to convert records to JSON",
-                )));
-            }
-        };
-
+        let response = StateResponse::ok(last_update);
+        let json_records = or_server_error!(
+            serde_json::to_string(&response),
+            "Fail to convert records to JSON"
+        );
         let content_type = Mime(TopLevel::Application, SubLevel::Json, Vec::new());
 
         Ok(Response::with((content_type, status::Ok, json_records)))
