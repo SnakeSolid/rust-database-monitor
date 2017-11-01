@@ -15,7 +15,7 @@
     <div class="ui container">
       <div class="ui inverted secondary pointing menu">
         <div class="item">
-          <div class="ui icon input">
+          <div class="ui icon input" data-bind="css: { loading: loading }">
             <input placeholder="Search..." type="text" data-bind="textInput: query">
             <i class="search icon"></i>
           </div>
@@ -35,52 +35,48 @@
   </div>
 
   <div class="ui container">
-    <div class="ui loading segment" data-bind="visible: loading">
-      <p></p>
+    <div class="ui segment" data-bind="css: { loading: loading }">
+      <p data-bind="text: message" data-bind="visible: messageVisible"></p>
+
+      <table class="ui celled striped table" data-bind="visible: tableVisible">
+        <thead>
+          <tr>
+            <th class="three wide">Database name</th>
+            <th class="three wide">Server name</th>
+            <th class="four wide">Server description</th>
+            <th class="three wide">Role</th>
+            <th class="three wide">Updated</th>
+          </tr>
+        </thead>
+
+        <tbody data-bind="foreach: databases">
+          <tr>
+            <td class="collapsing">
+              <i class="database icon"></i> <span data-bind="text: name"></span>
+            </td>
+
+            <td>
+              <i class="server icon"></i> <span data-bind="text: server"></span>
+            </td>
+
+            <td>
+              <span data-bind="text: description"></span>
+            </td>
+
+            <td>
+              <i class="user icon"></i> <span data-bind="text: role"></span>
+            </td>
+
+            <td>
+              <i class="green check circle icon" data-bind="visible: isOk"></i>
+              <i class="yellow warning circle icon" data-bind="visible: isWarn"></i>
+              <i class="red remove circle icon" data-bind="visible: isErr"></i>
+              <span data-bind="text: updated"></span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-
-    <div class="ui segment" data-bind="visible: messageVisible">
-      <p data-bind="text: message"></p>
-    </div>
-
-    <table class="ui celled striped table" data-bind="visible: tableVisible">
-      <thead>
-        <tr>
-          <th class="three wide">Database name</th>
-          <th class="three wide">Server name</th>
-          <th class="four wide">Server description</th>
-          <th class="three wide">Role</th>
-          <th class="three wide">Updated</th>
-        </tr>
-      </thead>
-
-      <tbody data-bind="foreach: databases">
-        <tr>
-          <td class="collapsing">
-            <i class="database icon"></i> <span data-bind="text: name"></span>
-          </td>
-
-          <td>
-            <i class="server icon"></i> <span data-bind="text: server"></span>
-          </td>
-
-          <td>
-            <span data-bind="text: description"></span>
-          </td>
-
-          <td>
-            <i class="user icon"></i> <span data-bind="text: role"></span>
-          </td>
-
-          <td>
-            <i class="green check circle icon" data-bind="visible: isOk"></i>
-            <i class="yellow warning circle icon" data-bind="visible: isWarn"></i>
-            <i class="red remove circle icon" data-bind="visible: isErr"></i>
-            <span data-bind="text: updated"></span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 </body>
 </html>
