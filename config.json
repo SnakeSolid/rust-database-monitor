@@ -3,6 +3,6 @@
   "port": 8080,
   "interval": 600,
   "servers": [
-    { "name": "localhost", "role": "postgres", "password": "postgres" }
+    { "host": "localhost", "description": "localhost", "role": "user", "password": "password" }
   ]
 }
