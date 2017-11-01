@@ -18,7 +18,7 @@ pub struct DatabaseState {
     pub collate: String,
     pub owner: String,
     pub last_update: i64,
-    pub lower_name: String,
+    pub search_doc: String,
 }
 
 #[derive(Debug)]
@@ -44,16 +44,16 @@ impl ServerState {
 }
 
 impl DatabaseState {
-    pub fn new(name: String, collate: String, owner: String) -> DatabaseState {
+    pub fn new(name: String, collate: String, owner: String, search_doc: String) -> DatabaseState {
         let now = time::get_time().sec;
-        let lower_name = name.to_lowercase();
+        let search_doc = search_doc.to_lowercase();
 
         DatabaseState {
             name: name,
             collate: collate,
             owner: owner,
             last_update: now,
-            lower_name: lower_name,
+            search_doc: search_doc,
         }
     }
 }
@@ -66,7 +66,7 @@ pub struct DatabaseRow {
     pub database_name: String,
     pub database_collate: String,
     pub database_owner: String,
-    pub lower_name: String,
+    pub search_doc: String,
     pub last_update: i64,
 }
 
@@ -78,7 +78,7 @@ impl DatabaseRow {
         database_name: String,
         database_collate: String,
         database_owner: String,
-        lower_name: String,
+        search_doc: String,
         last_update: i64,
     ) -> Self {
         DatabaseRow {
@@ -87,7 +87,7 @@ impl DatabaseRow {
             database_name,
             database_collate,
             database_owner,
-            lower_name,
+            search_doc,
             last_update,
         }
     }
@@ -148,7 +148,7 @@ impl State {
                         database.name.clone(),
                         database.collate.clone(),
                         database.owner.clone(),
-                        database.lower_name.clone(),
+                        database.search_doc.clone(),
                         database.last_update,
                     );
 

@@ -61,7 +61,7 @@ impl DatabasesHandler {
 
         for part in query.split(|c| " _-".contains(c)).filter(|e| !e.is_empty()) {
             for database in &database_list {
-                if database.lower_name.contains(part) {
+                if database.search_doc.contains(part) {
                     let count = ranks.entry(database).or_insert(0);
 
                     *count += part.len();
@@ -75,7 +75,7 @@ impl DatabasesHandler {
 
         let result: Vec<_> = ranks
             .into_iter()
-            .take(20)
+            .take(30)
             .map(|(db, _)| {
                 DatabaseInfo {
                     database_name: db.database_name.clone(),

@@ -54,8 +54,9 @@ fn server_database_infos(conn_info: &ServerConnInfo) -> IoResult<Vec<DatabaseSta
             let database_name: String = row.get(0);
             let collation_name: String = row.get(1);
             let owner: String = row.get(2);
+            let search_doc = format!("{} {}", database_name, conn_info.host());
 
-            DatabaseState::new(database_name, collation_name, owner)
+            DatabaseState::new(database_name, collation_name, owner, search_doc)
         })
         .collect();
 
