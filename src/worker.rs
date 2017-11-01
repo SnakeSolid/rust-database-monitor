@@ -14,23 +14,22 @@ use config::ServerConnInfo;
 use state::State;
 use state::DatabaseState;
 
-
 pub struct Worker {
     join_handle: JoinHandle<()>,
 }
 
-
 fn server_database_infos(conn_info: &ServerConnInfo) -> IoResult<Vec<DatabaseState>> {
     let url = format!(
-        "postgresql://{1}:{2}@{0}/postgres",
-        conn_info.host,
-        conn_info.role,
-        conn_info.password
+        "postgresql://{2}:{3}@{0}:{1}/postgres",
+        conn_info.host(),
+        conn_info.port(),
+        conn_info.role(),
+        conn_info.password()
     );
     let conn = match Connection::connect(url, TlsMode::None) {
         Ok(conn) => conn,
         Err(err) => {
-            warn!("Failed to connect to server {}: {}", conn_info.host, err);
+            warn!("Failed to connect to server {}: {}", conn_info.host(), err);
 
             return Err(IoError::new(ErrorKind::Other, err));
         }
@@ -68,20 +67,18 @@ fn do_work(config: Configuration, state: State) {
     loop {
         info!("Updating servers started");
 
-        for conn_info in &config.servers {
-            debug!("Updating server {}", conn_info.host);
+        for conn_info in config.servers() {
+            debug!("Updating server {}", conn_info.host());
 
             match server_database_infos(conn_info) {
-                Ok(dbs) => {
-                    state.update_server(conn_info.host.clone(), conn_info.description.clone(), dbs)
-                }
-                Err(err) => warn!("Failed to update server {}: {}", conn_info.host, err),
+                Ok(dbs) => state.update_server(&conn_info.host(), &conn_info.description(), dbs),
+                Err(err) => warn!("Failed to update server {}: {}", conn_info.host(), err),
             }
         }
 
         info!("Updating servers finished");
 
-        thread::sleep(Duration::from_secs(config.interval));
+        thread::sleep(Duration::from_secs(config.interval()));
     }
 }
 

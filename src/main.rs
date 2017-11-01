@@ -2,13 +2,13 @@
 extern crate log;
 extern crate argparse;
 extern crate env_logger;
-extern crate rustc_serialize;
-extern crate time;
 extern crate iron;
 extern crate mount;
-extern crate router;
-extern crate staticfile;
 extern crate postgres;
+extern crate router;
+extern crate rustc_serialize;
+extern crate staticfile;
+extern crate time;
 
 mod config;
 mod handlers;
@@ -24,9 +24,9 @@ use state::State;
 use worker::Worker;
 
 use iron::Iron;
+use mount::Mount;
 use router::Router;
 use staticfile::Static;
-use mount::Mount;
 
 
 fn main() {
@@ -73,9 +73,9 @@ fn main() {
     mount.mount("/api/v1", router);
     mount.mount("/", Static::new("template/index.html"));
 
-    info!("Binding to {}:{}", config.address, config.port);
+    info!("Binding to {}:{}", config.address(), config.port());
 
-    if let Err(err) = Iron::new(mount).http((config.address.as_ref(), config.port)) {
+    if let Err(err) = Iron::new(mount).http((config.address().as_ref(), config.port())) {
         error!("Can not start server: {}", err);
     }
 

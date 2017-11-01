@@ -1,9 +1,9 @@
 use std::fs::File;
-use std::path::Path;
-use std::io::Read;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::io::Read;
 use std::io::Result as IoResult;
+use std::path::Path;
 
 use rustc_serialize::json;
 
@@ -13,18 +13,45 @@ use argparse::StoreOption;
 
 #[derive(RustcDecodable, Debug, Clone)]
 pub struct ServerConnInfo {
-    pub host: String,
-    pub description: String,
-    pub role: String,
-    pub password: String,
+    host: String,
+    port: Option<u16>,
+    description: Option<String>,
+    role: String,
+    password: String,
 }
 
 #[derive(RustcDecodable, Debug, Clone)]
 pub struct Configuration {
-    pub address: String,
-    pub port: u16,
-    pub interval: u64,
-    pub servers: Vec<ServerConnInfo>,
+    address: String,
+    port: u16,
+    interval: u64,
+    servers: Vec<ServerConnInfo>,
+}
+
+
+const DEFAULT_PORT: u16 = 5432;
+
+
+impl ServerConnInfo {
+    pub fn host(&self) -> String {
+        self.host.clone()
+    }
+
+    pub fn port(&self) -> u16 {
+        self.port.unwrap_or(DEFAULT_PORT)
+    }
+
+    pub fn description(&self) -> Option<String> {
+        self.description.clone()
+    }
+
+    pub fn role(&self) -> String {
+        self.role.clone()
+    }
+
+    pub fn password(&self) -> String {
+        self.password.clone()
+    }
 }
 
 
@@ -64,7 +91,14 @@ impl Configuration {
 
         let mut config = match config_file {
             Some(config_file) => Self::read_from_file(config_file)?,
-            None => Configuration::default(),
+            None => {
+                error!("Configuration file path is required");
+
+                return Err(IoError::new(
+                    ErrorKind::NotFound,
+                    "Configuration file not found",
+                ));
+            }
         };
 
         if let Some(address) = address {
@@ -99,6 +133,22 @@ impl Configuration {
                 Err(IoError::new(ErrorKind::Other, err))
             }
         }
+    }
+
+    pub fn address(&self) -> String {
+        self.address.clone()
+    }
+
+    pub fn port(&self) -> u16 {
+        self.port
+    }
+
+    pub fn interval(&self) -> u64 {
+        self.interval
+    }
+
+    pub fn servers(&self) -> &Vec<ServerConnInfo> {
+        &self.servers
     }
 }
 

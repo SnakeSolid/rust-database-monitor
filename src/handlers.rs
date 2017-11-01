@@ -4,17 +4,17 @@ use std::io::Read;
 
 use rustc_serialize::json;
 
-use iron::Request;
-use iron::IronResult;
-use iron::Response;
 use iron::Handler;
-use iron::status;
+use iron::IronResult;
 use iron::mime::Mime;
-use iron::mime::TopLevel;
 use iron::mime::SubLevel;
+use iron::mime::TopLevel;
+use iron::Request;
+use iron::Response;
+use iron::status;
 
-use state::State;
 use state::DatabaseRow;
+use state::State;
 
 
 #[derive(RustcDecodable, Debug, Clone)]
@@ -29,7 +29,7 @@ struct DatabaseInfo {
     collation_name: String,
     role_name: String,
     server_name: String,
-    server_description: String,
+    server_description: Option<String>,
     last_update: Option<i64>,
 }
 

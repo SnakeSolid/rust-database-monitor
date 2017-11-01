@@ -13,7 +13,6 @@ FROM pg_database AS d
     INNER JOIN pg_roles AS r ON ( r.oid = d.datdba )
 WHERE
     rolcreaterole = FALSE AND
-    rolcreatedb = TRUE AND
     rolcanlogin = TRUE
 ```
 
@@ -33,7 +32,7 @@ Optional arguments:
 * `-b` (`--bind`) BIND: address to bind on, default value localhost;
 * `-p` (`--port`) PORT: port to listen on, default value 8080;
 * `-i` (`--interval`) INTERVAL: probe databases interval in seconds, default value 10 minutes;
-* `-c` (`--config`) CONFIG: set path to configuration file in JSON format.
+* `-c` (`--config`) CONFIG: set path to configuration file in JSON format. Parameter is required.
 
 ## Configuration file
 
@@ -44,5 +43,7 @@ Configuration file should be in JSON format with all fields required. See `confi
 * `interval`: interval between probing databases;
 * `servers`: object represents server name and credentials:
   * `name`: string, server host name or address (will be shown in GUI);
+  * `port`: integer, server port (default value 5432);
+  * `description`: string, server description (can be null);
   * `role`: string, role to login with;
   * `password`: string: password to get access to the server.
