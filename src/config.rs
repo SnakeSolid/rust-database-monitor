@@ -10,7 +10,6 @@ use serde_json;
 use argparse::ArgumentParser;
 use argparse::StoreOption;
 
-
 #[derive(Deserialize, Debug, Clone)]
 pub struct ServerConnInfo {
     host: String,
@@ -21,39 +20,47 @@ pub struct ServerConnInfo {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct MetadataConnInfo {
+    host: String,
+    port: Option<u16>,
+    database: String,
+    role: String,
+    password: String,
+    query: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct Configuration {
     address: String,
     port: u16,
     interval: u64,
+    metadata: Option<MetadataConnInfo>,
     servers: Vec<ServerConnInfo>,
 }
 
-
 const DEFAULT_PORT: u16 = 5432;
 
-
 impl ServerConnInfo {
-    pub fn host(&self) -> String {
-        self.host.clone()
+    pub fn host(&self) -> &String {
+        &self.host
     }
 
     pub fn port(&self) -> u16 {
         self.port.unwrap_or(DEFAULT_PORT)
     }
 
-    pub fn description(&self) -> Option<String> {
-        self.description.clone()
+    pub fn description(&self) -> &Option<String> {
+        &self.description
     }
 
-    pub fn role(&self) -> String {
-        self.role.clone()
+    pub fn role(&self) -> &String {
+        &self.role
     }
 
-    pub fn password(&self) -> String {
-        self.password.clone()
+    pub fn password(&self) -> &String {
+        &self.password
     }
 }
-
 
 impl Configuration {
     pub fn from_args() -> IoResult<Configuration> {
@@ -135,8 +142,8 @@ impl Configuration {
         }
     }
 
-    pub fn address(&self) -> String {
-        self.address.clone()
+    pub fn address(&self) -> &String {
+        &self.address
     }
 
     pub fn port(&self) -> u16 {
@@ -147,11 +154,14 @@ impl Configuration {
         self.interval
     }
 
+    pub fn metadata(&self) -> &Option<MetadataConnInfo> {
+        &self.metadata
+    }
+
     pub fn servers(&self) -> &Vec<ServerConnInfo> {
         &self.servers
     }
 }
-
 
 impl Default for Configuration {
     fn default() -> Configuration {
@@ -159,6 +169,7 @@ impl Default for Configuration {
             address: "localhost".into(),
             port: 8080,
             interval: 600,
+            metadata: None,
             servers: Vec::new(),
         }
     }

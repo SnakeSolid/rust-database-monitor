@@ -17,6 +17,7 @@ extern crate time;
 mod config;
 mod handlers;
 mod logger;
+mod search;
 mod state;
 mod worker;
 

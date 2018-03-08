@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use std::collections::HashMap;
 use std::io::Read;
 
 use serde_json;
@@ -13,45 +12,38 @@ use iron::Request;
 use iron::Response;
 use iron::status;
 
+use search::Query;
 use state::DatabaseRow;
 use state::State;
-
 
 #[derive(Deserialize, Debug, Clone)]
 struct DatabasesRequest {
     query: String,
 }
 
-
 #[derive(Serialize, Debug, Clone)]
-struct DatabaseInfo {
+struct Database {
+    server_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")] server_description: Option<String>,
     database_name: String,
     collation_name: String,
     role_name: String,
-    server_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    server_description: Option<String>,
     last_update: Option<i64>,
 }
 
-
 #[derive(Serialize, Debug, Clone)]
 struct DatabasesResponse {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    databases: Option<Vec<DatabaseInfo>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    message: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")] databases: Option<Vec<Database>>,
+    #[serde(skip_serializing_if = "Option::is_none")] message: Option<String>,
     ok: bool,
 }
-
 
 pub struct DatabasesHandler {
     state: State,
 }
 
-
 impl DatabasesResponse {
-    fn ok(databases: Vec<DatabaseInfo>) -> DatabasesResponse {
+    fn ok(databases: Vec<Database>) -> DatabasesResponse {
         DatabasesResponse {
             databases: Some(databases),
             message: None,
@@ -68,66 +60,66 @@ impl DatabasesResponse {
     }
 }
 
+impl Database {
+    fn new(
+        server_name: &str,
+        server_description: &Option<String>,
+        database_name: &str,
+        collation_name: &str,
+        role_name: &str,
+        last_update: Option<i64>,
+    ) -> Database {
+        Database {
+            server_name: server_name.into(),
+            server_description: server_description.clone(),
+            database_name: database_name.into(),
+            collation_name: collation_name.into(),
+            role_name: role_name.into(),
+            last_update,
+        }
+    }
+}
 
 impl DatabasesHandler {
     pub fn new(state: State) -> DatabasesHandler {
         DatabasesHandler { state: state }
     }
 
-    fn range_databases<S>(query: S, database_list: Vec<DatabaseRow>) -> Vec<DatabaseInfo>
-    where
-        S: Into<String>,
-    {
-        let query = query.into();
-        let mut ranks = HashMap::new();
+    fn query_databases(&self, query: &Query) -> Vec<Database> {
+        let mut databases = self.state.query(query);
+        databases.sort_by(Self::compare_databases);
 
-        for part in query.split(|c| " _-".contains(c)).filter(|e| !e.is_empty()) {
-            for database in &database_list {
-                if database.search_doc.contains(part) {
-                    let count = ranks.entry(database).or_insert(0);
-
-                    *count += part.len();
-                }
-            }
-        }
-
-        let mut ranks: Vec<_> = ranks.into_iter().collect();
-
-        ranks.sort_by(Self::compare_databases);
-
-        let result: Vec<_> = ranks
+        databases
             .into_iter()
             .take(30)
-            .map(|(db, _)| {
-                DatabaseInfo {
-                    database_name: db.database_name.clone(),
-                    collation_name: db.database_collate.clone(),
-                    role_name: db.database_owner.clone(),
-                    server_name: db.server_name.clone(),
-                    server_description: db.server_description.clone(),
-                    last_update: Some(db.last_update),
-                }
+            .map(|database| {
+                Database::new(
+                    database.server_name(),
+                    database.server_description(),
+                    database.database_name(),
+                    database.database_collate(),
+                    database.database_owner(),
+                    Some(database.last_update()),
+                )
             })
-            .collect();
-
-        result
+            .collect()
     }
 
-    fn compare_databases(a: &(&DatabaseRow, usize), b: &(&DatabaseRow, usize)) -> Ordering {
-        let &(a_db, a_rank) = a;
-        let &(b_db, b_rank) = b;
+    fn compare_databases(a: &DatabaseRow, b: &DatabaseRow) -> Ordering {
+        let a_weight = a.weight();
+        let b_weight = b.weight();
 
-        if a_rank < b_rank {
+        if a_weight < b_weight {
             return Ordering::Greater;
-        } else if a_rank > b_rank {
+        } else if a_weight > b_weight {
             return Ordering::Less;
-        } else if a_db.database_name < b_db.database_name {
+        } else if a.database_name() < b.database_name() {
             return Ordering::Greater;
-        } else if a_db.database_name > b_db.database_name {
+        } else if a.database_name() > b.database_name() {
             return Ordering::Less;
-        } else if a_db.server_name < b_db.server_name {
+        } else if a.server_name() < b.server_name() {
             return Ordering::Greater;
-        } else if a_db.database_name > b_db.database_name {
+        } else if a.database_name() > b.database_name() {
             return Ordering::Less;
         } else {
             Ordering::Equal
@@ -185,8 +177,8 @@ impl Handler for DatabasesHandler {
 
             Ok(Response::with((content_type, status::Ok, json_records)))
         } else {
-            let databases =
-                Self::range_databases(request.query.to_lowercase(), self.state.databases());
+            let query = request.query.into();
+            let databases = self.query_databases(&query);
             let response = DatabasesResponse::ok(databases);
             let json_records = or_server_error!(
                 serde_json::to_string(&response),
@@ -198,9 +190,7 @@ impl Handler for DatabasesHandler {
     }
 }
 
-
 pub struct EmptyHandler;
-
 
 impl EmptyHandler {
     pub fn new() -> EmptyHandler {
@@ -208,28 +198,22 @@ impl EmptyHandler {
     }
 }
 
-
 impl Handler for EmptyHandler {
     fn handle(&self, _: &mut Request) -> IronResult<Response> {
         Ok(Response::with((status::BadRequest, "No API entry point")))
     }
 }
 
-
 #[derive(Serialize, Debug, Clone)]
 struct StateResponse {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    last_update: Option<i64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    message: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")] last_update: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")] message: Option<String>,
     ok: bool,
 }
-
 
 pub struct StatusHandler {
     state: State,
 }
-
 
 impl StateResponse {
     fn ok(last_update: Option<i64>) -> StateResponse {
@@ -241,13 +225,11 @@ impl StateResponse {
     }
 }
 
-
 impl StatusHandler {
     pub fn new(state: State) -> StatusHandler {
         StatusHandler { state: state }
     }
 }
-
 
 impl Handler for StatusHandler {
     fn handle(&self, _: &mut Request) -> IronResult<Response> {

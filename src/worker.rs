@@ -12,13 +12,13 @@ use postgres::TlsMode;
 use config::Configuration;
 use config::ServerConnInfo;
 use state::State;
-use state::DatabaseState;
+use state::DatabaseInfo;
 
 pub struct Worker {
     join_handle: JoinHandle<()>,
 }
 
-fn server_database_infos(conn_info: &ServerConnInfo) -> IoResult<Vec<DatabaseState>> {
+fn server_database_infos(conn_info: &ServerConnInfo) -> IoResult<Vec<DatabaseInfo>> {
     let url = format!(
         "postgresql://{2}:{3}@{0}:{1}/postgres",
         conn_info.host(),
@@ -54,15 +54,13 @@ fn server_database_infos(conn_info: &ServerConnInfo) -> IoResult<Vec<DatabaseSta
             let database_name: String = row.get(0);
             let collation_name: String = row.get(1);
             let owner: String = row.get(2);
-            let search_doc = format!("{} {}", database_name, conn_info.host());
 
-            DatabaseState::new(database_name, collation_name, owner, search_doc)
+            DatabaseInfo::new(conn_info.host(), &database_name, &collation_name, &owner)
         })
         .collect();
 
     Ok(result)
 }
-
 
 fn do_work(config: Configuration, state: State) {
     loop {
@@ -83,14 +81,15 @@ fn do_work(config: Configuration, state: State) {
     }
 }
 
-
 impl Worker {
     pub fn spawn(config: Configuration, state: State) -> IoResult<Worker> {
         let join_handle = Builder::new()
             .name("Worker (update db info)".into())
             .spawn(move || do_work(config, state))?;
 
-        Ok(Worker { join_handle: join_handle })
+        Ok(Worker {
+            join_handle: join_handle,
+        })
     }
 
     pub fn join(self) {
