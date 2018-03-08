@@ -1,8 +1,9 @@
+use std::collections::HashSet;
 use std::io::Result as IoResult;
-use std::time::Duration;
-use std::thread;
 use std::thread::Builder;
 use std::thread::JoinHandle;
+use std::thread;
+use std::time::Duration;
 
 use postgres::Connection;
 use postgres::TlsMode;
@@ -125,7 +126,7 @@ fn query_database_metadata(
 }
 
 fn do_work(connection_info: &MetadataConnInfo, interval: Duration, state: State) {
-    let ignored_databases = Vec::default();
+    let mut ignored_databases: HashSet<ServerDatabase> = HashSet::default();
 
     loop {
         info!("Updating metadata started");
@@ -146,13 +147,18 @@ fn do_work(connection_info: &MetadataConnInfo, interval: Duration, state: State)
         });
 
         match query_database_metadata(connection_info, &pending_databases) {
-            Ok(database_metadatas) => for database_metadata in &database_metadatas {
+            Ok(databases) => for database in &databases {
+                let server_database =
+                    ServerDatabase::new(database.server_name(), database.database_name());
+
+                ignored_databases.insert(server_database);
+
                 state.set_database_metadata(
-                    database_metadata.server_name(),
-                    database_metadata.database_name(),
-                    database_metadata.commit(),
-                    database_metadata.branch_name(),
-                    database_metadata.project_name(),
+                    database.server_name(),
+                    database.database_name(),
+                    database.commit(),
+                    database.branch_name(),
+                    database.project_name(),
                 );
             },
             Err(err) => {
