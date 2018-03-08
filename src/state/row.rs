@@ -5,6 +5,9 @@ pub struct DatabaseRow {
     database_name: String,
     database_collate: String,
     database_owner: String,
+    commit: Option<i64>,
+    branch_name: Option<String>,
+    project_name: Option<String>,
     last_update: i64,
     weight: usize,
 }
@@ -16,6 +19,9 @@ impl DatabaseRow {
         database_name: &str,
         database_collate: &str,
         database_owner: &str,
+        commit: &Option<i64>,
+        branch_name: &Option<String>,
+        project_name: &Option<String>,
         last_update: i64,
         weight: usize,
     ) -> Self {
@@ -25,6 +31,9 @@ impl DatabaseRow {
             database_name: database_name.into(),
             database_collate: database_collate.into(),
             database_owner: database_owner.into(),
+            commit: commit.clone(),
+            branch_name: branch_name.clone(),
+            project_name: project_name.clone(),
             last_update,
             weight,
         }
@@ -48,6 +57,18 @@ impl DatabaseRow {
 
     pub fn database_owner(&self) -> &String {
         &self.database_owner
+    }
+
+    pub fn commit(&self) -> &Option<i64> {
+        &self.commit
+    }
+
+    pub fn branch_name(&self) -> &Option<String> {
+        &self.branch_name
+    }
+
+    pub fn project_name(&self) -> &Option<String> {
+        &self.project_name
     }
 
     pub fn last_update(&self) -> i64 {

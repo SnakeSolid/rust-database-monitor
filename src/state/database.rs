@@ -58,8 +58,8 @@ impl DatabaseInfo {
         self.last_update
     }
 
-    pub fn commit(&self) -> Option<i64> {
-        self.commit
+    pub fn commit(&self) -> &Option<i64> {
+        &self.commit
     }
 
     pub fn project_name(&self) -> &Option<String> {

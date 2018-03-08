@@ -39,6 +39,9 @@ impl State {
                     database.database_name(),
                     database.database_collate(),
                     database.database_owner(),
+                    database.commit(),
+                    database.project_name(),
+                    database.branch_name(),
                     database.last_update(),
                     weight,
                 );

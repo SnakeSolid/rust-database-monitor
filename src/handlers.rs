@@ -27,6 +27,9 @@ struct Database {
     #[serde(skip_serializing_if = "Option::is_none")] server_description: Option<String>,
     database_name: String,
     collation_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")] commit: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")] branch_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")] project_name: Option<String>,
     role_name: String,
     last_update: Option<i64>,
 }
@@ -66,6 +69,9 @@ impl Database {
         server_description: &Option<String>,
         database_name: &str,
         collation_name: &str,
+        commit: &Option<i64>,
+        branch_name: &Option<String>,
+        project_name: &Option<String>,
         role_name: &str,
         last_update: Option<i64>,
     ) -> Database {
@@ -74,6 +80,9 @@ impl Database {
             server_description: server_description.clone(),
             database_name: database_name.into(),
             collation_name: collation_name.into(),
+            commit: commit.clone(),
+            branch_name: branch_name.clone(),
+            project_name: project_name.clone(),
             role_name: role_name.into(),
             last_update,
         }
@@ -98,6 +107,9 @@ impl DatabasesHandler {
                     database.server_description(),
                     database.database_name(),
                     database.database_collate(),
+                    database.commit(),
+                    database.branch_name(),
+                    database.project_name(),
                     database.database_owner(),
                     Some(database.last_update()),
                 )
