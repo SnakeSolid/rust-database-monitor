@@ -42,8 +42,9 @@
         <thead>
           <tr>
             <th class="three wide">Database name</th>
-            <th class="three wide">Server name</th>
-            <th class="four wide">Server description</th>
+            <th class="three wide">Server</th>
+            <th class="two wide">Branch</th>
+            <th class="two wide">Project</th>
             <th class="three wide">Role</th>
             <th class="three wide">Updated</th>
           </tr>
@@ -56,11 +57,17 @@
             </td>
 
             <td>
-              <i class="server icon"></i> <span data-bind="text: server"></span>
+              <i class="server icon"></i>
+              <span data-bind="text: server"></span>
+              <span data-bind="if: hasDescription">(<span data-bind="text: description"></span>)</span>
             </td>
 
             <td>
-              <span data-bind="text: description"></span>
+              <span data-bind="text: branch"></span>
+            </td>
+
+            <td>
+              <span data-bind="text: project"></span>
             </td>
 
             <td>

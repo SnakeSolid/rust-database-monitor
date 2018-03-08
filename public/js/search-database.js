@@ -19,9 +19,11 @@ requirejs.config({
 
 // Start the application logic.
 requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
+  const WARNING_TIMEOUT = 15 * 60;
+  const ERROR_TIMEOUT = 30 * 60;
   const NO_DATA_MESSAGE = "No data";
 
-  function DatabaseItem(name, collate, role, server, description, updated) {
+  function DatabaseItem(name, collate, role, server, description, branch, project, updated) {
     var self = this;
 
     self.name = ko.observable(name);
@@ -29,35 +31,45 @@ requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
     self.role = ko.observable(role);
     self.server = ko.observable(server);
     self.description = ko.observable(description);
+    self.branch = ko.observable(branch);
+    self.project = ko.observable(project);
 
-    self.updated = ko.computed(function() {
+    self.hasDescription = ko.pureComputed(function() {
+      if (description) {
+        return true;
+      }
+
+      return false;
+    }, this);
+
+    self.updated = ko.pureComputed(function() {
       if (updated === 0) {
         return "";
       }
 
       return moment.unix(updated).fromNow();
-    });
+    }, this);
 
-    self.isOk = ko.computed(function() {
+    self.isOk = ko.pureComputed(function() {
       var now = new Date().getTime() / 1000.0;
       var delta = now - updated;
 
-      return delta <= 15 * 60;
-    });
+      return delta <= WARNING_TIMEOUT;
+    }, this);
 
-    self.isWarn = ko.computed(function() {
+    self.isWarn = ko.pureComputed(function() {
       var now = new Date().getTime() / 1000.0;
       var delta = now - updated;
 
-      return delta > 15 * 60 && delta <= 30 * 60;
-    });
+      return delta > WARNING_TIMEOUT && delta <= ERROR_TIMEOUT;
+    }, this);
 
-    self.isErr = ko.computed(function() {
+    self.isErr = ko.pureComputed(function() {
       var now = new Date().getTime() / 1000.0;
       var delta = now - updated;
 
-      return delta > 30 * 60;
-    });
+      return delta > ERROR_TIMEOUT;
+    }, this);
   }
 
   function SearchDatabaseModel() {
@@ -120,6 +132,8 @@ requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
               item["role_name"] || "",
               item["server_name"] || "",
               item["server_description"] || "",
+              item["branch_name"] || "",
+              item["project_name"] || "",
               item["last_update"] || 0
             );
           }));
