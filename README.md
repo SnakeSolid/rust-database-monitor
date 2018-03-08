@@ -41,9 +41,43 @@ Configuration file should be in JSON format with all fields required. See `confi
 * `address`: string, represents local address to bind on;
 * `port`: integer, represents port to listen on. Should be in 0-65535 range;
 * `interval`: interval between probing databases;
+* `metadata`: should be defined to start meta-data collector:
+  * `host`: string, meta-data server host name or address;
+  * `port`: integer, meta-data server port (default value 5432);
+  * `database`: string, meta-data database;
+  * `role`: string, role to login on meta-data server;
+  * `password`: string, password to login on meta-data server;
+  * `query`: string: query to get meta-data information (see meta-data query section).
 * `servers`: object represents server name and credentials:
   * `name`: string, server host name or address (will be shown in GUI);
   * `port`: integer, server port (default value 5432);
   * `description`: string, server description (can be null);
   * `role`: string, role to login with;
   * `password`: string: password to get access to the server.
+
+## Meta-data query
+
+The `metadata.query` used to retrieve commit, project name and branch name for every database. The query must return three fields:
+
+* first - bigint, commit number;
+* second - string, branch name;
+* third - string, project name.
+
+Meta-data query must contain two parameters:
+
+* $1 - string, server name;
+* $2 - string, database name;
+
+Meta-data query example:
+
+```sql
+SELECT
+  m.commit::BIGINT AS commit,
+  m.branch AS branch,
+  m.project AS project
+FROM monitoring.monitor AS m
+WHERE m.server_name = $1
+  AND m.database_name = $2
+ORDER BY m.id DESC
+LIMIT 1
+```
