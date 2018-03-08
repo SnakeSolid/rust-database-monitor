@@ -6,6 +6,7 @@ use search::Query;
 use super::DatabaseInfo;
 use super::DatabaseRow;
 use super::InternalState;
+use super::ServerInfo;
 
 #[derive(Debug, Clone)]
 pub struct State {
@@ -49,6 +50,35 @@ impl State {
         }
 
         result
+    }
+
+    pub fn for_each_database(&self, callback: &mut FnMut(&ServerInfo, &DatabaseInfo)) {
+        if let Ok(inner) = self.inner.read() {
+            inner.for_each_database(callback);
+        } else {
+            warn!("Failed to lock state for read");
+        }
+    }
+
+    pub fn set_database_metadata(
+        &self,
+        server_name: &str,
+        database_name: &str,
+        commit: i64,
+        branch_name: &str,
+        project_name: &str,
+    ) {
+        if let Ok(mut inner) = self.inner.write() {
+            inner.set_database_metadata(
+                server_name,
+                database_name,
+                commit,
+                branch_name,
+                project_name,
+            );
+        } else {
+            warn!("Failed to lock state for write");
+        }
     }
 
     pub fn last_update(&self) -> Option<i64> {

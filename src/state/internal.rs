@@ -18,11 +18,10 @@ impl InternalState {
     pub fn update_server(&mut self, server_name: &str, server_description: &Option<String>) {
         let now = time::get_time().sec;
         let name = server_name.into();
-        let server = self.servers
-            .entry(name)
-            .or_insert_with(|| ServerInfo::new(server_name, server_description, 0));
 
-        server.set_last_update(now);
+        self.servers
+            .entry(name)
+            .or_insert_with(|| ServerInfo::new(server_name, server_description));
 
         self.last_update = now;
     }
@@ -54,6 +53,45 @@ impl InternalState {
 
                 if let Some(weight) = document.weight_for(query) {
                     callback(server_info, database_info, weight);
+                }
+            }
+        }
+    }
+
+    pub fn for_each_database(&self, callback: &mut FnMut(&ServerInfo, &DatabaseInfo)) {
+        for (server_name, databases) in &self.databases {
+            let server_info = match self.servers.get(server_name) {
+                Some(server_info) => server_info,
+                None => {
+                    warn!("Failed to lookup server with name {}", server_name);
+
+                    continue;
+                }
+            };
+
+            for database_info in databases {
+                callback(server_info, database_info);
+            }
+        }
+    }
+
+    pub fn set_database_metadata(
+        &mut self,
+        server_name: &str,
+        database_name: &str,
+        commit: i64,
+        branch_name: &str,
+        project_name: &str,
+    ) {
+        if let Some(databases) = self.databases.get_mut(server_name) {
+            for database in databases {
+                if database.database_name() == database_name {
+                    database.set_commit(commit);
+                    database.set_branch_name(branch_name);
+                    database.set_project_name(project_name);
+                    database.document_mut().extend(&[branch_name, project_name]);
+
+                    break;
                 }
             }
         }

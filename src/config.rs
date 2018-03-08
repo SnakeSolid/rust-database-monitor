@@ -62,6 +62,32 @@ impl ServerConnInfo {
     }
 }
 
+impl MetadataConnInfo {
+    pub fn host(&self) -> &String {
+        &self.host
+    }
+
+    pub fn port(&self) -> u16 {
+        self.port.unwrap_or(DEFAULT_PORT)
+    }
+
+    pub fn database(&self) -> &String {
+        &self.database
+    }
+
+    pub fn role(&self) -> &String {
+        &self.role
+    }
+
+    pub fn password(&self) -> &String {
+        &self.password
+    }
+
+    pub fn query(&self) -> &String {
+        &self.query
+    }
+}
+
 impl Configuration {
     pub fn from_args() -> IoResult<Configuration> {
         let mut address: Option<String> = None;

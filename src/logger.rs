@@ -6,7 +6,6 @@ use env_logger::LogBuilder;
 
 use time;
 
-
 fn format(record: &LogRecord) -> String {
     let t = time::now();
 
@@ -20,7 +19,6 @@ fn format(record: &LogRecord) -> String {
         )
     }
 }
-
 
 pub fn init() -> Result<(), SetLoggerError> {
     let mut builder = LogBuilder::new();

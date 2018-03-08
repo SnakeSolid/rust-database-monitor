@@ -9,9 +9,9 @@ pub struct DatabaseInfo {
     database_collate: String,
     database_owner: String,
     last_update: i64,
-    commit: Option<usize>,
-    project: Option<String>,
-    branch: Option<String>,
+    commit: Option<i64>,
+    project_name: Option<String>,
+    branch_name: Option<String>,
     document: Document,
 }
 
@@ -32,8 +32,8 @@ impl DatabaseInfo {
             database_owner: database_owner.into(),
             last_update: now,
             commit: None,
-            project: None,
-            branch: None,
+            project_name: None,
+            branch_name: None,
             document: document,
         }
     }
@@ -58,20 +58,32 @@ impl DatabaseInfo {
         self.last_update
     }
 
-    pub fn commit(&self) -> Option<usize> {
+    pub fn commit(&self) -> Option<i64> {
         self.commit
     }
 
-    pub fn project(&self) -> &Option<String> {
-        &self.project
+    pub fn project_name(&self) -> &Option<String> {
+        &self.project_name
     }
 
-    pub fn branch(&self) -> &Option<String> {
-        &self.branch
+    pub fn branch_name(&self) -> &Option<String> {
+        &self.branch_name
     }
 
     pub fn document(&self) -> &Document {
         &self.document
+    }
+
+    pub fn set_commit(&mut self, commit: i64) {
+        self.commit = Some(commit);
+    }
+
+    pub fn set_project_name(&mut self, project_name: &str) {
+        self.project_name = Some(project_name.into());
+    }
+
+    pub fn set_branch_name(&mut self, branch_name: &str) {
+        self.branch_name = Some(branch_name.into());
     }
 
     pub fn document_mut(&mut self) -> &mut Document {

@@ -26,13 +26,64 @@ use handlers::DatabasesHandler;
 use handlers::EmptyHandler;
 use handlers::StatusHandler;
 use state::State;
-use worker::Worker;
+use worker::DatabaseWorker;
+use worker::MetadataWorker;
 
 use iron::Iron;
 use mount::Mount;
 use router::Router;
 use staticfile::Static;
 
+fn start_database_worker(config: &Configuration, state: State) -> Option<DatabaseWorker> {
+    info!("Starting database worker thread");
+
+    match DatabaseWorker::spawn(config.clone(), state) {
+        Ok(worker) => Some(worker),
+        Err(err) => {
+            error!("Failed to spawn database worker thread: {}", err);
+
+            None
+        }
+    }
+}
+
+fn start_metadata_worker(config: &Configuration, state: State) -> Option<MetadataWorker> {
+    let interval = config.interval();
+    let metadata_config = match config.metadata() {
+        &Some(ref metadata_config) => metadata_config.clone(),
+        &None => return None,
+    };
+
+    info!("Starting metadata worker thread");
+
+    match MetadataWorker::spawn(metadata_config, interval, state) {
+        Ok(worker) => Some(worker),
+        Err(err) => {
+            error!("Failed to spawn metadata worker thread: {}", err);
+
+            None
+        }
+    }
+}
+
+fn initialize_server(state: State) -> Mount {
+    let mut router = Router::new();
+    let mut mount = Mount::new();
+
+    router.post("/status", StatusHandler::new(state.clone()), "status");
+    router.post(
+        "/databases",
+        DatabasesHandler::new(state.clone()),
+        "databases",
+    );
+    router.post("/", EmptyHandler::new(), "empty");
+
+    mount.mount("/public", Static::new("public/"));
+    mount.mount("/api/v1", router);
+    mount.mount("/", Static::new("template/index.html"));
+
+    mount
+}
 
 fn main() {
     if let Err(err) = logger::init() {
@@ -51,32 +102,9 @@ fn main() {
     };
 
     let state = State::default();
-
-    info!("Starting worker thread");
-
-    let worker = match Worker::spawn(config.clone(), state.clone()) {
-        Ok(worker) => worker,
-        Err(err) => {
-            error!("Failed to spawn worker thread: {}", err);
-
-            return;
-        }
-    };
-
-    let mut router = Router::new();
-
-    router.post("/status", StatusHandler::new(state.clone()), "status");
-    router.post(
-        "/databases",
-        DatabasesHandler::new(state.clone()),
-        "databases",
-    );
-    router.post("/", EmptyHandler::new(), "empty");
-
-    let mut mount = Mount::new();
-    mount.mount("/public", Static::new("public/"));
-    mount.mount("/api/v1", router);
-    mount.mount("/", Static::new("template/index.html"));
+    let database_worker = start_database_worker(&config, state.clone());
+    let metadata_worker = start_metadata_worker(&config, state.clone());
+    let mount = initialize_server(state);
 
     info!("Binding to {}:{}", config.address(), config.port());
 
@@ -84,5 +112,11 @@ fn main() {
         error!("Can not start server: {}", err);
     }
 
-    worker.join();
+    if let Some(database_worker) = database_worker {
+        database_worker.join();
+    }
+
+    if let Some(metadata_worker) = metadata_worker {
+        metadata_worker.join();
+    }
 }

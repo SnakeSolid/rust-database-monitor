@@ -14,7 +14,7 @@ use config::ServerConnInfo;
 use state::State;
 use state::DatabaseInfo;
 
-pub struct Worker {
+pub struct DatabaseWorker {
     join_handle: JoinHandle<()>,
 }
 
@@ -81,20 +81,20 @@ fn do_work(config: Configuration, state: State) {
     }
 }
 
-impl Worker {
-    pub fn spawn(config: Configuration, state: State) -> IoResult<Worker> {
+impl DatabaseWorker {
+    pub fn spawn(config: Configuration, state: State) -> IoResult<DatabaseWorker> {
         let join_handle = Builder::new()
-            .name("Worker (update db info)".into())
+            .name("Database worker".into())
             .spawn(move || do_work(config, state))?;
 
-        Ok(Worker {
+        Ok(DatabaseWorker {
             join_handle: join_handle,
         })
     }
 
     pub fn join(self) {
         if let Err(_) = self.join_handle.join() {
-            info!("Failed to join worker thread");
+            info!("Failed to join database worker thread");
         }
     }
 }
