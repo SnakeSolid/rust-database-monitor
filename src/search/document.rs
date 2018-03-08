@@ -1,4 +1,5 @@
 use super::Query;
+use super::SEPARATORS;
 
 #[derive(Debug)]
 pub struct Document {
@@ -17,8 +18,11 @@ impl Document {
         for word in words {
             let word = word.to_lowercase();
 
-            self.tokens
-                .extend(word.split(|c| " _-".contains(c)).map(|token| token.into()));
+            self.tokens.extend(
+                word.split(|c| SEPARATORS.contains(c))
+                    .filter(|token| !token.is_empty())
+                    .map(|token| token.into()),
+            );
         }
     }
 

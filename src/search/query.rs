@@ -1,3 +1,5 @@
+use super::SEPARATORS;
+
 #[derive(Debug)]
 pub struct Query {
     tokens: Vec<String>,
@@ -10,7 +12,11 @@ impl Query {
         for word in words {
             let word = word.to_lowercase();
 
-            tokens.extend(word.split(|c| " _-".contains(c)).map(|token| token.into()));
+            tokens.extend(
+                word.split(|c| SEPARATORS.contains(c))
+                    .filter(|token| !token.is_empty())
+                    .map(|token| token.into()),
+            );
         }
 
         Query { tokens }
