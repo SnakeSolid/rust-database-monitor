@@ -17,7 +17,7 @@ pub struct MetadataWorker {
     join_handle: JoinHandle<()>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 struct ServerDatabase {
     server_name: String,
     database_name: String,
@@ -141,6 +141,7 @@ fn do_work(connection_info: &MetadataConnInfo, interval: Duration, state: State)
                     ServerDatabase::new(database.server_name(), database.database_name());
 
                 if !ignored_databases.contains(&server_database) {
+                    ignored_databases.insert(server_database.clone());
                     pending_databases.push(server_database);
                 }
             }
@@ -148,11 +149,6 @@ fn do_work(connection_info: &MetadataConnInfo, interval: Duration, state: State)
 
         match query_database_metadata(connection_info, &pending_databases) {
             Ok(databases) => for database in &databases {
-                let server_database =
-                    ServerDatabase::new(database.server_name(), database.database_name());
-
-                ignored_databases.insert(server_database);
-
                 state.set_database_metadata(
                     database.server_name(),
                     database.database_name(),
