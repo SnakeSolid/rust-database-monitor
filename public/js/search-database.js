@@ -1,5 +1,7 @@
 "use strict";
 
+/*globals requirejs */
+
 requirejs.config({
   baseUrl: "/public/js/",
   paths: {
@@ -131,13 +133,13 @@ requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
         }
 
         self.loading(false);
-      }).fail(function(err) {
+      }).fail(function() {
         self.loading(false);
       });
 
       self.message("");
       self.loading(true);
-    }
+    };
 
     self.checkStatus = function () {
       reqwest({
@@ -151,13 +153,13 @@ requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
         } else {
           self.updated(0);
         }
-      }).fail(function(err) {
+      }).fail(function() {
         self.updated(0);
       });
     };
 
-    self.query.subscribe(function(newValue) {
-      if (self.timerId != null) {
+    self.query.subscribe(function() {
+      if (self.timerId !== null) {
         window.clearTimeout(self.timerId);
       }
 
