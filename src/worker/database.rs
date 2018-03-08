@@ -1,24 +1,24 @@
 use std::io::Result as IoResult;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
-use std::time::Duration;
-use std::thread;
 use std::thread::Builder;
 use std::thread::JoinHandle;
+use std::thread;
+use std::time::Duration;
 
 use postgres::Connection;
 use postgres::TlsMode;
 
 use config::Configuration;
 use config::ServerConnInfo;
-use state::State;
 use state::DatabaseInfo;
+use state::State;
+
+use super::WorkerResult;
 
 pub struct DatabaseWorker {
     join_handle: JoinHandle<()>,
 }
 
-fn server_database_infos(conn_info: &ServerConnInfo) -> IoResult<Vec<DatabaseInfo>> {
+fn server_database_infos(conn_info: &ServerConnInfo) -> WorkerResult<Vec<DatabaseInfo>> {
     let url = format!(
         "postgresql://{2}:{3}@{0}:{1}/postgres",
         conn_info.host(),
@@ -26,15 +26,7 @@ fn server_database_infos(conn_info: &ServerConnInfo) -> IoResult<Vec<DatabaseInf
         conn_info.role(),
         conn_info.password()
     );
-    let conn = match Connection::connect(url, TlsMode::None) {
-        Ok(conn) => conn,
-        Err(err) => {
-            warn!("Failed to connect to server {}: {}", conn_info.host(), err);
-
-            return Err(IoError::new(ErrorKind::Other, err));
-        }
-    };
-
+    let conn = Connection::connect(url, TlsMode::None)?;
     let rows = conn.query(
         r#"
     SELECT
