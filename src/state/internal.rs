@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 use time;
 
@@ -10,7 +11,7 @@ use super::ServerInfo;
 #[derive(Debug)]
 pub struct InternalState {
     servers: HashMap<String, ServerInfo>,
-    databases: HashMap<String, Vec<DatabaseInfo>>,
+    databases: HashMap<String, HashMap<String, DatabaseInfo>>,
     last_update: i64,
 }
 
@@ -26,13 +27,24 @@ impl InternalState {
         self.last_update = now;
     }
 
-    pub fn update_databases(&mut self, server_name: &str, mut databases: Vec<DatabaseInfo>) {
+    pub fn update_databases(&mut self, server_name: &str, databases: Vec<DatabaseInfo>) {
         let now = time::get_time().sec;
         let name = server_name.into();
-        let entry = self.databases.entry(name).or_insert_with(|| Vec::default());
+        let entry = self.databases
+            .entry(name)
+            .or_insert_with(|| HashMap::default());
+        let mut keys: HashSet<_> = entry.keys().cloned().collect();
 
-        entry.clear();
-        entry.extend(databases.drain(..));
+        for database in databases {
+            let database_name = database.database_name().clone();
+
+            keys.remove(&database_name);
+            entry.entry(database_name).or_insert(database);
+        }
+
+        for key in keys {
+            entry.remove(&key);
+        }
 
         self.last_update = now;
     }
@@ -48,7 +60,7 @@ impl InternalState {
                 }
             };
 
-            for database_info in databases {
+            for database_info in databases.values() {
                 let document = database_info.document();
 
                 if let Some(weight) = document.weight_for(query) {
@@ -69,7 +81,7 @@ impl InternalState {
                 }
             };
 
-            for database_info in databases {
+            for database_info in databases.values() {
                 callback(server_info, database_info);
             }
         }
@@ -84,7 +96,7 @@ impl InternalState {
         project_name: &str,
     ) {
         if let Some(databases) = self.databases.get_mut(server_name) {
-            for database in databases {
+            for database in databases.values_mut() {
                 if database.database_name() == database_name {
                     database.set_commit(commit);
                     database.set_branch_name(branch_name);
