@@ -39,7 +39,10 @@ impl InternalState {
             let database_name = database.database_name().clone();
 
             keys.remove(&database_name);
-            entry.entry(database_name).or_insert(database);
+            entry
+                .entry(database_name)
+                .or_insert(database)
+                .set_last_update(now);
         }
 
         for key in keys {

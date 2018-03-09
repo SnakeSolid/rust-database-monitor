@@ -1,5 +1,3 @@
-use time;
-
 use search::Document;
 
 #[derive(Debug)]
@@ -22,7 +20,6 @@ impl DatabaseInfo {
         database_collate: &str,
         database_owner: &str,
     ) -> DatabaseInfo {
-        let now = time::get_time().sec;
         let document = Document::new(&[server_name, database_name]);
 
         DatabaseInfo {
@@ -30,7 +27,7 @@ impl DatabaseInfo {
             database_name: database_name.into(),
             database_collate: database_collate.into(),
             database_owner: database_owner.into(),
-            last_update: now,
+            last_update: 0,
             commit: None,
             project_name: None,
             branch_name: None,
@@ -72,6 +69,10 @@ impl DatabaseInfo {
 
     pub fn document(&self) -> &Document {
         &self.document
+    }
+
+    pub fn set_last_update(&mut self, last_update: i64) {
+        self.last_update = last_update;
     }
 
     pub fn set_commit(&mut self, commit: i64) {
