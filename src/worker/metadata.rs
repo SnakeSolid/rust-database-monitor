@@ -125,6 +125,27 @@ fn query_database_metadata(
     Ok(result)
 }
 
+fn update_database_info(
+    connection_info: &MetadataConnInfo,
+    pending_databases: &Vec<ServerDatabase>,
+    state: &State,
+) {
+    match query_database_metadata(connection_info, &pending_databases) {
+        Ok(databases) => for database in &databases {
+            state.set_database_metadata(
+                database.server_name(),
+                database.database_name(),
+                database.commit(),
+                database.branch_name(),
+                database.project_name(),
+            );
+        },
+        Err(err) => {
+            warn!("Failed to update metadata: {}", err);
+        }
+    };
+}
+
 fn do_work(connection_info: &MetadataConnInfo, interval: Duration, state: State) {
     let mut ignored_databases: HashSet<ServerDatabase> = HashSet::default();
 
@@ -147,20 +168,9 @@ fn do_work(connection_info: &MetadataConnInfo, interval: Duration, state: State)
             }
         });
 
-        match query_database_metadata(connection_info, &pending_databases) {
-            Ok(databases) => for database in &databases {
-                state.set_database_metadata(
-                    database.server_name(),
-                    database.database_name(),
-                    database.commit(),
-                    database.branch_name(),
-                    database.project_name(),
-                );
-            },
-            Err(err) => {
-                warn!("Failed to update metadata: {}", err);
-            }
-        };
+        if !pending_databases.is_empty() {
+            update_database_info(connection_info, &pending_databases, &state);
+        }
 
         info!("Updating metadata finished");
 
