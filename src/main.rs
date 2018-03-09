@@ -37,7 +37,10 @@ use staticfile::Static;
 fn start_database_worker(config: &Configuration, state: State) -> Option<DatabaseWorker> {
     info!("Starting database worker thread");
 
-    match DatabaseWorker::spawn(config.clone(), state) {
+    let servers = config.servers().clone();
+    let interval = config.interval();
+
+    match DatabaseWorker::spawn(servers, interval, state) {
         Ok(worker) => Some(worker),
         Err(err) => {
             error!("Failed to spawn database worker thread: {}", err);

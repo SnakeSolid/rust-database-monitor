@@ -7,7 +7,6 @@ use std::time::Duration;
 use postgres::Connection;
 use postgres::TlsMode;
 
-use config::Configuration;
 use config::ServerConnInfo;
 use state::DatabaseInfo;
 use state::State;
@@ -18,28 +17,16 @@ pub struct DatabaseWorker {
     join_handle: JoinHandle<()>,
 }
 
-fn server_database_infos(conn_info: &ServerConnInfo) -> WorkerResult<Vec<DatabaseInfo>> {
+fn server_database_infos(connection_info: &ServerConnInfo) -> WorkerResult<Vec<DatabaseInfo>> {
     let url = format!(
         "postgresql://{2}:{3}@{0}:{1}/postgres",
-        conn_info.host(),
-        conn_info.port(),
-        conn_info.role(),
-        conn_info.password()
+        connection_info.host(),
+        connection_info.port(),
+        connection_info.role(),
+        connection_info.password()
     );
     let conn = Connection::connect(url, TlsMode::None)?;
-    let rows = conn.query(
-        r#"
-    SELECT
-        d.datname,
-        d.datcollate,
-        r.rolname
-    FROM pg_database AS d
-        INNER JOIN pg_roles AS r ON ( r.oid = d.datdba )
-    WHERE
-        rolcreaterole = FALSE AND
-        rolcanlogin = TRUE"#,
-        &[],
-    )?;
+    let rows = conn.query(include_str!("query-databases.sql"), &[])?;
 
     let result = rows.into_iter()
         .map(|row| {
@@ -47,37 +34,55 @@ fn server_database_infos(conn_info: &ServerConnInfo) -> WorkerResult<Vec<Databas
             let collation_name: String = row.get(1);
             let owner: String = row.get(2);
 
-            DatabaseInfo::new(conn_info.host(), &database_name, &collation_name, &owner)
+            DatabaseInfo::new(
+                connection_info.host(),
+                &database_name,
+                &collation_name,
+                &owner,
+            )
         })
         .collect();
 
     Ok(result)
 }
 
-fn do_work(config: Configuration, state: State) {
+fn do_work(servers: Vec<ServerConnInfo>, interval: Duration, state: State) {
     loop {
         info!("Updating servers started");
 
-        for conn_info in config.servers() {
-            debug!("Updating server {}", conn_info.host());
+        for connection_info in &servers {
+            debug!("Updating server {}", connection_info.host());
 
-            match server_database_infos(conn_info) {
-                Ok(dbs) => state.update_server(&conn_info.host(), &conn_info.description(), dbs),
-                Err(err) => warn!("Failed to update server {}: {}", conn_info.host(), err),
+            match server_database_infos(connection_info) {
+                Ok(dbs) => state.update_server(
+                    &connection_info.host(),
+                    &connection_info.description(),
+                    dbs,
+                ),
+                Err(err) => warn!(
+                    "Failed to update server {}: {}",
+                    connection_info.host(),
+                    err
+                ),
             }
         }
 
         info!("Updating servers finished");
 
-        thread::sleep(Duration::from_secs(config.interval()));
+        thread::sleep(interval);
     }
 }
 
 impl DatabaseWorker {
-    pub fn spawn(config: Configuration, state: State) -> IoResult<DatabaseWorker> {
+    pub fn spawn(
+        servers: Vec<ServerConnInfo>,
+        interval: u64,
+        state: State,
+    ) -> IoResult<DatabaseWorker> {
+        let interval = Duration::from_secs(interval);
         let join_handle = Builder::new()
             .name("Database worker".into())
-            .spawn(move || do_work(config, state))?;
+            .spawn(move || do_work(servers, interval, state))?;
 
         Ok(DatabaseWorker {
             join_handle: join_handle,

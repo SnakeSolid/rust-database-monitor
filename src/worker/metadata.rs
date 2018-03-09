@@ -107,6 +107,8 @@ fn query_database_metadata(
         let server_name = database.server_name();
         let database_name = database.database_name();
 
+        debug!("Updating database {}/{}", server_name, database_name);
+
         for row in &statement.query(&[server_name, database_name])? {
             let commit: i64 = row.get(0);
             let branch_name: String = row.get(1);
