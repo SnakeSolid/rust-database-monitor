@@ -86,9 +86,7 @@ fn initialize_server(state: State) -> Mount {
 }
 
 fn main() {
-    if let Err(err) = logger::init() {
-        panic!("Failed to initialize logger: {}", err);
-    }
+    logger::init();
 
     info!("Reading configuration");
 
