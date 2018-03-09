@@ -41,12 +41,9 @@
       <table class="ui celled striped table" data-bind="visible: tableVisible">
         <thead>
           <tr>
-            <th class="three wide">Database name</th>
-            <th class="three wide">Server</th>
-            <th class="two wide">Branch</th>
-            <th class="two wide">Project</th>
-            <th class="three wide">Role</th>
-            <th class="three wide">Updated</th>
+            <th class="four wide">Database name</th>
+            <th class="four wide">Server</th>
+            <th class="eight wide">Metadata</th>
           </tr>
         </thead>
 
@@ -63,22 +60,13 @@
             </td>
 
             <td>
-              <span data-bind="text: branch"></span>
-            </td>
-
-            <td>
-              <span data-bind="text: project"></span>
-            </td>
-
-            <td>
-              <i class="user icon"></i> <span data-bind="text: role"></span>
-            </td>
-
-            <td>
+              <span data-bind="if: hasCommit">commit: <span data-bind="text: commit"></span>,&emsp;</span>
+              <span data-bind="if: hasBranch">branch: <span data-bind="text: branch"></span>,&emsp;</span>
+              <span data-bind="if: hasProject">project: <span data-bind="text: project"></span>,&emsp;</span>
+              <span>role: <span data-bind="text: role"></span>&emsp;</span>
               <i class="green check circle icon" data-bind="visible: isOk"></i>
               <i class="yellow warning circle icon" data-bind="visible: isWarn"></i>
               <i class="red remove circle icon" data-bind="visible: isErr"></i>
-              <span data-bind="text: updated"></span>
             </td>
           </tr>
         </tbody>

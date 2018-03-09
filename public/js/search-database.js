@@ -23,50 +23,66 @@ requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
   const ERROR_TIMEOUT = 30 * 60;
   const NO_DATA_MESSAGE = "No data";
 
-  function DatabaseItem(name, collate, role, server, description, branch, project, updated) {
-    var self = this;
-
-    self.name = ko.observable(name);
-    self.collate = ko.observable(collate);
-    self.role = ko.observable(role);
-    self.server = ko.observable(server);
-    self.description = ko.observable(description);
-    self.branch = ko.observable(branch);
-    self.project = ko.observable(project);
+  function DatabaseItem(_name, _collate, _role, _server, _description, _commit, _branch, _project, _updated) {
+    this.name = ko.observable(_name);
+    this.collate = ko.observable(_collate);
+    this.role = ko.observable(_role);
+    this.server = ko.observable(_server);
+    this.description = ko.observable(_description);
+    this.commit = ko.observable(_commit);
+    this.branch = ko.observable(_branch);
+    this.project = ko.observable(_project);
+    this.updated = ko.observable(_updated);
 
     self.hasDescription = ko.pureComputed(function() {
-      if (description) {
+      if (this.description()) {
         return true;
       }
 
       return false;
     }, this);
 
-    self.updated = ko.pureComputed(function() {
-      if (updated === 0) {
-        return "";
+    self.hasCommit = ko.pureComputed(function() {
+      if (this.commit()) {
+        return true;
       }
 
-      return moment.unix(updated).fromNow();
+      return false;
+    }, this);
+
+    self.hasBranch = ko.pureComputed(function() {
+      if (this.branch()) {
+        return true;
+      }
+
+      return false;
+    }, this);
+
+    self.hasProject = ko.pureComputed(function() {
+      if (this.project()) {
+        return true;
+      }
+
+      return false;
     }, this);
 
     self.isOk = ko.pureComputed(function() {
       var now = new Date().getTime() / 1000.0;
-      var delta = now - updated;
+      var delta = now - this.updated();
 
       return delta <= WARNING_TIMEOUT;
     }, this);
 
     self.isWarn = ko.pureComputed(function() {
       var now = new Date().getTime() / 1000.0;
-      var delta = now - updated;
+      var delta = now - this.updated();
 
       return delta > WARNING_TIMEOUT && delta <= ERROR_TIMEOUT;
     }, this);
 
     self.isErr = ko.pureComputed(function() {
       var now = new Date().getTime() / 1000.0;
-      var delta = now - updated;
+      var delta = now - this.updated();
 
       return delta > ERROR_TIMEOUT;
     }, this);
@@ -132,6 +148,7 @@ requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
               item["role_name"] || "",
               item["server_name"] || "",
               item["server_description"] || "",
+              item["commit"] || 0,
               item["branch_name"] || "",
               item["project_name"] || "",
               item["last_update"] || 0
