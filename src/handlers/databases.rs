@@ -139,32 +139,6 @@ impl DatabasesHandler {
     }
 }
 
-macro_rules! or_bad_request {
-    ($param: expr, $message: tt) => {
-        match $param {
-            Ok(value) => value,
-            Err(err) => {
-                warn!("{}: {}", $message, err);
-
-                return Ok(Response::with((status::BadRequest, $message)));
-            }
-        }
-    }
-}
-
-macro_rules! or_server_error {
-    ($param: expr, $message: tt) => {
-        match $param {
-            Ok(value) => value,
-            Err(err) => {
-                warn!("{}: {}", $message, err);
-
-                return Ok(Response::with((status::InternalServerError, $message)));
-            }
-        }
-    }
-}
-
 impl Handler for DatabasesHandler {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let mut body = String::new();
@@ -199,60 +173,5 @@ impl Handler for DatabasesHandler {
 
             Ok(Response::with((content_type, status::Ok, json_records)))
         }
-    }
-}
-
-pub struct EmptyHandler;
-
-impl EmptyHandler {
-    pub fn new() -> EmptyHandler {
-        EmptyHandler {}
-    }
-}
-
-impl Handler for EmptyHandler {
-    fn handle(&self, _: &mut Request) -> IronResult<Response> {
-        Ok(Response::with((status::BadRequest, "No API entry point")))
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-struct StateResponse {
-    #[serde(skip_serializing_if = "Option::is_none")] last_update: Option<i64>,
-    #[serde(skip_serializing_if = "Option::is_none")] message: Option<String>,
-    ok: bool,
-}
-
-pub struct StatusHandler {
-    state: State,
-}
-
-impl StateResponse {
-    fn ok(last_update: Option<i64>) -> StateResponse {
-        StateResponse {
-            last_update: last_update,
-            message: None,
-            ok: true,
-        }
-    }
-}
-
-impl StatusHandler {
-    pub fn new(state: State) -> StatusHandler {
-        StatusHandler { state: state }
-    }
-}
-
-impl Handler for StatusHandler {
-    fn handle(&self, _: &mut Request) -> IronResult<Response> {
-        let last_update = self.state.last_update();
-        let response = StateResponse::ok(last_update);
-        let json_records = or_server_error!(
-            serde_json::to_string(&response),
-            "Fail to convert records to JSON"
-        );
-        let content_type = Mime(TopLevel::Application, SubLevel::Json, Vec::new());
-
-        Ok(Response::with((content_type, status::Ok, json_records)))
     }
 }
