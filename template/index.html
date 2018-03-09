@@ -60,10 +60,10 @@
             </td>
 
             <td>
-              <span data-bind="if: hasCommit">commit: <span data-bind="text: commit"></span>,&emsp;</span>
-              <span data-bind="if: hasBranch">branch: <span data-bind="text: branch"></span>,&emsp;</span>
-              <span data-bind="if: hasProject">project: <span data-bind="text: project"></span>,&emsp;</span>
-              <span>role: <span data-bind="text: role"></span>&emsp;</span>
+              <span data-bind="if: hasCommit">ci: <span data-bind="text: commit"></span>,&ensp;</span>
+              <span data-bind="if: hasBranch">branch: <span data-bind="text: branch"></span>,&ensp;</span>
+              <span data-bind="if: hasProject">project: <span data-bind="text: project"></span>,&ensp;</span>
+              <span>role: <span data-bind="text: role"></span>&ensp;</span>
               <i class="green check circle icon" data-bind="visible: isOk"></i>
               <i class="yellow warning circle icon" data-bind="visible: isWarn"></i>
               <i class="red remove circle icon" data-bind="visible: isErr"></i>
