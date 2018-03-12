@@ -34,7 +34,7 @@ requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
     this.project = ko.observable(_project);
     this.updated = ko.observable(_updated);
 
-    self.hasDescription = ko.pureComputed(function() {
+    this.hasDescription = ko.pureComputed(function() {
       if (this.description()) {
         return true;
       }
@@ -42,7 +42,7 @@ requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
       return false;
     }, this);
 
-    self.hasCommit = ko.pureComputed(function() {
+    this.hasCommit = ko.pureComputed(function() {
       if (this.commit()) {
         return true;
       }
@@ -50,7 +50,7 @@ requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
       return false;
     }, this);
 
-    self.hasBranch = ko.pureComputed(function() {
+    this.hasBranch = ko.pureComputed(function() {
       if (this.branch()) {
         return true;
       }
@@ -58,7 +58,7 @@ requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
       return false;
     }, this);
 
-    self.hasProject = ko.pureComputed(function() {
+    this.hasProject = ko.pureComputed(function() {
       if (this.project()) {
         return true;
       }
@@ -66,21 +66,21 @@ requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
       return false;
     }, this);
 
-    self.isOk = ko.pureComputed(function() {
+    this.isOk = ko.pureComputed(function() {
       var now = new Date().getTime() / 1000.0;
       var delta = now - this.updated();
 
       return delta <= WARNING_TIMEOUT;
     }, this);
 
-    self.isWarn = ko.pureComputed(function() {
+    this.isWarn = ko.pureComputed(function() {
       var now = new Date().getTime() / 1000.0;
       var delta = now - this.updated();
 
       return delta > WARNING_TIMEOUT && delta <= ERROR_TIMEOUT;
     }, this);
 
-    self.isErr = ko.pureComputed(function() {
+    this.isErr = ko.pureComputed(function() {
       var now = new Date().getTime() / 1000.0;
       var delta = now - this.updated();
 
@@ -90,6 +90,7 @@ requirejs([ "knockout", "moment", "reqwest" ], function(ko, moment, reqwest) {
 
   function SearchDatabaseModel() {
     var self = this;
+
     self.updated = ko.observable(0);
     self.query = ko.observable("");
     self.loading = ko.observable(false);
