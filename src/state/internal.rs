@@ -104,7 +104,12 @@ impl InternalState {
                     database.set_commit(commit);
                     database.set_branch_name(branch_name);
                     database.set_project_name(project_name);
-                    database.document_mut().extend(&[branch_name, project_name]);
+
+                    let commit = format!("{}", commit);
+
+                    database
+                        .document_mut()
+                        .extend(&[&commit, branch_name, project_name]);
 
                     break;
                 }
